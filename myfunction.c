@@ -209,16 +209,15 @@ void smooth(int dim, pixel* src, pixel* dst, int kernelScale, bool filter, bool 
 
 void doConvolution(int kernelScale, int filter, int sharp) {
     //calculating size only once, reduce funciton calls (sizeof) as well
-    register int size = m * n * sizeof(pixel);
+    register int size = m * n * sizeof(pixel), row, col, index1, index2, thisRow;
     pixel* pixelsImg = malloc(size);
     pixel* backupOrg = malloc(size);
     //implementing called functions.
-    register int row, col;
     for (row = 0; row < m; ++row) {
-        register int thisRow = row * n;
+        thisRow = row * n;
         for (col = 0; col < n; ++col) {
-            register int index1 = thisRow + col;
-            register int index2 = 3 * index1;
+            index1 = thisRow + col;
+            index2 = 3 * index1;
             pixelsImg[index1].red = image->data[index2];
             pixelsImg[index1].green = image->data[index2 + 1];
             pixelsImg[index1].blue = image->data[index2 + 2];
@@ -230,15 +229,17 @@ void doConvolution(int kernelScale, int filter, int sharp) {
 
     smooth(m, backupOrg, pixelsImg, kernelScale, filter, sharp);
 
+    thisRow = 0;
     for (row = 0; row < m; ++row) {
-        register int thisRow = row * n;
+        index1 = thisRow;
         for (col = 0; col < n; ++col) {
-            register int index1 = thisRow + col;
-            register int index2 = 3 * index1;
+            index2 = index1 + index1 + index1;
             image->data[index2] = pixelsImg[index1].red;
             image->data[index2 + 1] = pixelsImg[index1].green;
             image->data[index2 + 2] = pixelsImg[index1].blue;
+            ++index1;
         }
+        thisRow += n;
     }
     free(pixelsImg);
     free(backupOrg);
