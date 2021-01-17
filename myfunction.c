@@ -12,112 +12,114 @@ typedef struct {
     int blue;
 } pixel_sum;
 
+// I used an array instead of the pixel_sum struct
+// to make it faster
+
 /*
-* this function smooth an image
+* this function smooth an image, i put here the implementation of
+* all the methods smooth call to, if opened loop for (if the loop iterates over few rounds)
 */
 void smooth(int M, pixel* src, pixel* dst, register int kernelScale, register int isFilter, register int isSharp) {
-
+    // register int is faster a int
     register int i, j, size = M - 1, mRow = M, upperRow, underRow, min_intensity, max_intensity, min_row, min_col, max_row, max_col, mRowJ,
-    upperRowJ, underRowJ, temp, ii, jj, tempRow, tempColor, temp1, temp2, maxIi, maxJj;
+            upperRowJ, underRowJ, temp, ii, jj, tempRow, tempColor, temp1, temp2, maxIi, maxJj;
     pixel current_pixel, loop_pixel;
+    // initialize an array for the values of the pixel colors
+    register int sum[3] = {0, 0, 0};
+    // ++i is faster then i++
     for (i = 1; i < size; ++i) {
         upperRow = mRow + M;
         underRow = mRow - M;
         for (j = 1; j < size; ++j) {
-            //initializing pixel_sum locally
-            pixel_sum sum = { 0, 0, 0 };
+            // set the values back to 0
+            sum[0] = sum[1] = sum[2] = 0;
             min_intensity = 766; // arbitrary value that is higher than maximum possible intensity, which is 255*3=765
             max_intensity = -1; // arbitrary value that is lower than minimum possible intensity, which is 0
             mRowJ = mRow + j;
             upperRowJ = upperRow + j;
             underRowJ = underRow + j;
-            //
             /* sharp Kernel:
             * [-1, -1, -1]
             * [-1, 9, -1]
             * [-1, -1, -1]
-            * adding the values manually to avoid extra loops and funciton calls.
             */
+            // here I opened the nested for loops to make it faster
+            // because the size of the kernel is constant and its 3
             if (isSharp) {
-
-                sum.green = (src[mRowJ].green << 3)  + src[mRowJ].green;
-                sum.blue = (src[mRowJ].blue << 3)  + src[mRowJ].blue;
-                sum.red = (src[mRowJ].red << 3)  + src[mRowJ].red;
-
+                // shifts are faster then multiplication
+                sum[0] = (src[mRowJ].red << 3)  + src[mRowJ].red;
+                sum[1] = (src[mRowJ].green << 3)  + src[mRowJ].green;
+                sum[2] = (src[mRowJ].blue << 3)  + src[mRowJ].blue;
+                // i used temp var to avoid redundant calculations
                 temp = mRowJ + 1;
-                sum.red -= src[temp].red;
-                sum.green -= src[temp].green;
-                sum.blue -= src[temp].blue;
+                sum[0] -= src[temp].red;
+                sum[1] -= src[temp].green;
+                sum[2] -= src[temp].blue;
                 temp -= 2;
-                sum.red -= src[temp].red;
-                sum.green -= src[temp].green;
-                sum.blue -= src[temp].blue;
-
-                sum.red -= src[upperRowJ].red;
-                sum.green -= src[upperRowJ].green;
-                sum.blue -= src[upperRowJ].blue;
+                sum[0] -= src[temp].red;
+                sum[1] -= src[temp].green;
+                sum[2] -= src[temp].blue;
+                // the upper row in the kernel
+                sum[0] -= src[upperRowJ].red;
+                sum[1] -= src[upperRowJ].green;
+                sum[2] -= src[upperRowJ].blue;
                 temp = upperRowJ + 1;
-                sum.red -= src[temp].red;
-                sum.green -= src[temp].green;
-                sum.blue -= src[temp].blue;
+                sum[0] -= src[temp].red;
+                sum[1] -= src[temp].green;
+                sum[2] -= src[temp].blue;
                 temp -= 2;
-                sum.red -= src[temp].red;
-                sum.green -= src[temp].green;
-                sum.blue -= src[temp].blue;
-
-                sum.red -= src[underRowJ].red;
-                sum.green -= src[underRowJ].green;
-                sum.blue -= src[underRowJ].blue;
+                sum[0] -= src[temp].red;
+                sum[1] -= src[temp].green;
+                sum[2] -= src[temp].blue;
+                sum[0] -= src[underRowJ].red;
+                sum[1] -= src[underRowJ].green;
+                sum[2] -= src[underRowJ].blue;
                 temp = underRowJ + 1;
-                sum.red -= src[temp].red;
-                sum.green -= src[temp].green;
-                sum.blue -= src[temp].blue;
+                sum[0] -= src[temp].red;
+                sum[1] -= src[temp].green;
+                sum[2] -= src[temp].blue;
                 temp -= 2;
-                sum.red -= src[temp].red;
-                sum.green -= src[temp].green;
-                sum.blue -= src[temp].blue;
-            }
-                // Blur Kernel is 3x3 of 1's
-            else {
-                sum.red += src[mRowJ].red;
-                sum.green += src[mRowJ].green;
-                sum.blue += src[mRowJ].blue;
+                sum[0] -= src[temp].red;
+                sum[1] -= src[temp].green;
+                sum[2] -= src[temp].blue;
+            } else {
+                sum[0] += src[mRowJ].red;
+                sum[1] += src[mRowJ].green;
+                sum[2] += src[mRowJ].blue;
                 temp = mRowJ + 1;
-                sum.red += src[temp].red;
-                sum.green += src[temp].green;
-                sum.blue += src[temp].blue;
+                sum[0] += src[temp].red;
+                sum[1] += src[temp].green;
+                sum[2] += src[temp].blue;
                 temp -= 2;
-                sum.red += src[temp].red;
-                sum.green += src[temp].green;
-                sum.blue += src[temp].blue;
-
-                sum.red += src[upperRowJ].red;
-                sum.green += src[upperRowJ].green;
-                sum.blue += src[upperRowJ].blue;
+                sum[0] += src[temp].red;
+                sum[1] += src[temp].green;
+                sum[2] += src[temp].blue;
+                sum[0] += src[upperRowJ].red;
+                sum[1] += src[upperRowJ].green;
+                sum[2] += src[upperRowJ].blue;
                 temp = upperRowJ + 1;
-                sum.red += src[temp].red;
-                sum.green += src[temp].green;
-                sum.blue += src[temp].blue;
+                sum[0] += src[temp].red;
+                sum[1] += src[temp].green;
+                sum[2] += src[temp].blue;
                 temp -= 2;
-                sum.red += src[temp].red;
-                sum.green += src[temp].green;
-                sum.blue += src[temp].blue;
-
-                sum.red += src[underRowJ].red;
-                sum.green += src[underRowJ].green;
-                sum.blue += src[underRowJ].blue;
+                sum[0] += src[temp].red;
+                sum[1] += src[temp].green;
+                sum[2] += src[temp].blue;
+                sum[0] += src[underRowJ].red;
+                sum[1] += src[underRowJ].green;
+                sum[2] += src[underRowJ].blue;
                 temp = underRowJ + 1;
-                sum.red += src[temp].red;
-                sum.green += src[temp].green;
-                sum.blue += src[temp].blue;
+                sum[0] += src[temp].red;
+                sum[1] += src[temp].green;
+                sum[2] += src[temp].blue;
                 temp -= 2;
-                sum.red += src[temp].red;
-                sum.green += src[temp].green;
-                sum.blue += src[temp].blue;
+                sum[0] += src[temp].red;
+                sum[1] += src[temp].green;
+                sum[2] += src[temp].blue;
             }
             if (isFilter) {
-                //checkign min/max locally to avoid funciton calls + avoid using it every iteration of the loop
-
+                // i implemented here short version of the min/max function to reduce functions calls
+                // in the code to reduce running time
                 if (i - 1 > 0) {
                     temp1 = i - 1;
                 }
@@ -132,18 +134,11 @@ void smooth(int M, pixel* src, pixel* dst, register int kernelScale, register in
                 if (M - 1 < maxJj) {
                     maxJj = M - 1;
                 }
-
                 tempRow = temp1 * M;
                 for (ii = temp1; ii <= maxIi; ++ii) {
-
                     for (jj = temp2; jj <= maxJj; ++jj) {
-
                         loop_pixel = src[tempRow + jj];
-
-                        //calculating  only once instead of 3 times
-
                         tempColor = loop_pixel.red + loop_pixel.green + loop_pixel.blue;
-
                         if (tempColor <= min_intensity) {
                             min_intensity = tempColor;
                             min_row = ii;
@@ -155,82 +150,72 @@ void smooth(int M, pixel* src, pixel* dst, register int kernelScale, register in
                             max_col = jj;
                         }
                     }
+                    // i added m every iteration instead of multiply by m every iteration
                     tempRow += M;
                 }
-
                 pixel p1 = src[min_row * M + min_col];
                 pixel p2 = src[max_row * M + max_col];
-                sum.red -= (p1.red + p2.red);
-                sum.green -= (p1.green + p2.green);
-                sum.blue -= (p1.blue + p2.blue);
+                sum[0] -= (p1.red + p2.red);
+                sum[1] -= (p1.green + p2.green);
+                sum[2] -= (p1.blue + p2.blue);
             }
-            sum.red /= kernelScale;
-            sum.green /= kernelScale;
-            sum.blue /= kernelScale;
-
-            // truncate each pixel's color values to match the range [0,255]
-
-            if(sum.red < 0) {
-                sum.red = 0;
-            } else if (sum.red > 255) {
-                sum.red = 255;
+            // this way of dividing is faster than:  x = x / 3  for instance:
+            sum[0] /= kernelScale;
+            sum[1] /= kernelScale;
+            sum[2] /= kernelScale;
+            // make each value of the pixel to be in the range [0, 255]
+            if(sum[0] < 0) {
+                sum[0] = 0;
+            } else if (sum[0] > 255) {
+                sum[0] = 255;
             }
-            current_pixel.red = (unsigned char)sum.red;
-
-            if (sum.green < 0) {
-                sum.green = 0;
-            }else if (sum.green > 255) {
-                sum.green = 255;
+            current_pixel.red = (unsigned char)sum[0];
+            if (sum[1] < 0) {
+                sum[1] = 0;
+            }else if (sum[1] > 255) {
+                sum[1] = 255;
             }
-            current_pixel.green = (unsigned char)sum.green;
-
-            if (sum.blue < 0) {
-                sum.blue = 0;
-            } else if (sum.blue > 255) {
-                sum.blue = 255;
+            current_pixel.green = (unsigned char)sum[1];
+            if (sum[2] < 0) {
+                sum[2] = 0;
+            } else if (sum[2] > 255) {
+                sum[2] = 255;
             }
-            current_pixel.blue = (unsigned char)sum.blue;
-
+            current_pixel.blue = (unsigned char)sum[2];
             dst[mRow + j] = current_pixel;
         }
+        // added m every iteration instead of multiplication
         mRow += M;
     }
 }
-
 void doConvolution(register int kernelScale, register int isFilter, register int isSharp) {
-    //calculating size only once, reduce funciton calls (sizeof) as well
+    // i initialize all the var in the beginning to make it faster
+    // i didnt use the global vars m and n because its slower
     register int M = m, N = n, size = M * N * sizeof(pixel), row, col, rowCol, threeRows, temp3 = 0;
     pixel* src = malloc(size);
     pixel* dst = malloc(size);
-    //implementing called functions.
+    // i implemented the function chars to pixels and pixels to chars here instead of call them
     for (row = 0; row < M; ++row) {
-
         rowCol = temp3;
-
         for (col = 0; col < N; ++col) {
             threeRows = rowCol + rowCol + rowCol;
-            src[rowCol].red = image->data[threeRows];
-            src[rowCol].green = image->data[threeRows + 1];
-            src[rowCol].blue = image->data[threeRows + 2];
-
-            dst[rowCol].red = src[rowCol].red;
-            dst[rowCol].green = src[rowCol].green;
-            dst[rowCol].blue = src[rowCol].blue;
+            dst[rowCol].red = src[rowCol].red = image->data[threeRows];
+            dst[rowCol].green = src[rowCol].green = image->data[threeRows + 1];
+            dst[rowCol].blue = src[rowCol].blue = image->data[threeRows + 2];
             ++rowCol;
         }
         temp3 += N;
+
     }
-
-    smooth(M, dst, src, kernelScale, isFilter, isSharp);
-
+    smooth(M, src, dst, kernelScale, isFilter, isSharp);
     temp3 = 0;
     for (row = 0; row < M; ++row) {
         rowCol = temp3;
         for (col = 0; col < N; ++col) {
             threeRows = rowCol + rowCol + rowCol;
-            image->data[threeRows] = src[rowCol].red;
-            image->data[threeRows + 1] = src[rowCol].green;
-            image->data[threeRows + 2] = src[rowCol].blue;
+            image->data[threeRows] = dst[rowCol].red;
+            image->data[threeRows + 1] = dst[rowCol].green;
+            image->data[threeRows + 2] = dst[rowCol].blue;
             ++rowCol;
         }
         temp3 += N;
@@ -238,34 +223,25 @@ void doConvolution(register int kernelScale, register int isFilter, register int
     free(src);
     free(dst);
 }
-
-void myfunction(Image* image, char* srcImgpName, char* blurRsltImgName, char* sharpRsltImgName, char* filteredBlurRsltImgName, char* filteredSharpRsltImgName, char flag) {
+void myfunction(Image* image1, char* srcImgpName, char* blurRsltImgName, char* sharpRsltImgName, char* filteredBlurRsltImgName, char* filteredSharpRsltImgName, char flag) {
 
     if (flag == '1') {
-        // blur image
+        // if peferred to use the flags with int instead of char
         doConvolution(9, 0, 0);
-
-
-        // write result image to file
-        writeBMP(image, srcImgpName, blurRsltImgName);
-
-        // sharpen the resulting image
+        // save the image before sharpening
+        writeBMP(image1, srcImgpName, blurRsltImgName);
+        // sharpen the image
         doConvolution(1, 0, 1);
-
-        // write result image to file
-        writeBMP(image, srcImgpName, sharpRsltImgName);
+        // save the image after sharpening
+        writeBMP(image1, srcImgpName, sharpRsltImgName);
     }
     else {
-        // apply extermum filtered kernel to blur image
         doConvolution(7, 1, 0);
-
-        // write result image to file
-        writeBMP(image, srcImgpName, filteredBlurRsltImgName);
-
-        // sharpen the resulting image
+        // save image before sharpening
+        writeBMP(image1, srcImgpName, filteredBlurRsltImgName);
+        // sharpen the image
         doConvolution(1, 0 , 1);
-
-        // write result image to file
-        writeBMP(image, srcImgpName, filteredSharpRsltImgName);
+        // save image
+        writeBMP(image1, srcImgpName, filteredSharpRsltImgName);
     }
 }
