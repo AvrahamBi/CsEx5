@@ -1,4 +1,5 @@
-# CsEx5
+# Optimization exercise
 
-computer structure course
-ex5
+In this exercise I used
+many optimization technics
+to make the Image editting faster
